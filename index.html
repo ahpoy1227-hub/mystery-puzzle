@@ -66,10 +66,7 @@ textarea,input{
   <!-- 面板1：首页 -->
   <div id="home" class="panel active">
     <div class="card">
-      <div class="card" style="margin-top:16px;">
-<h4>📌 使用提示</h4>
-<p style="color:#bbb;">点击【开始解谜】浏览全部案件；前往【壁纸商店】更换网页背景。</p>
-</div>
+  
 <h3>欢迎来到推理谜案集</h3>
       <p>解开谜题赚取积分，兑换专属壁纸与特效。</p>
    <p style="margin-top:16px;color:#ccc;">
@@ -77,7 +74,11 @@ textarea,input{
 每解开一案，就能获得积分用来兑换。
 </p>
  </div>
-    <button class="btn" onclick="showPanel('list')">开始解谜</button>
+    <div class="card" style="margin-top:16px;">
+<h4>📌 使用提示</h4>
+<p style="color:#bbb;">点击【开始解谜】浏览全部案件；前往【壁纸商店】更换网页背景。</p>
+</div>
+<button class="btn" onclick="showPanel('list')">开始解谜</button>
     <button class="btn" onclick="showPanel('shop')">壁纸商店</button>
   </div>
 
