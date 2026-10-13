@@ -79,7 +79,8 @@ textarea,input{
 <p style="color:#bbb;">点击【开始解谜】浏览全部案件；前往【壁纸商店】更换网页背景。</p>
 </div>
 <button class="btn" onclick="showPanel('list')">开始解谜</button>
-    <button class="btn" onclick="showPanel('shop')">壁纸商店</button>
+    <button class="btn" onclick="showPanel('shop')">壁纸商店</button><button class="btn" onclick="getDailyPoint()">每日打卡 +5积分</button>
+
   </div>
 
   <!-- 面板2：谜题列表 -->
@@ -331,6 +332,56 @@ function buyWallpaper(name,bgColor,cost){
 
 // 页面启动
 initData();
+</script>
+<script>
+// 读取积分，第一次访问默认10分
+let score = parseInt(localStorage.getItem("score")) || 10;
+
+// 每日打卡逻辑
+const todayKey = "dailyRewardDate";
+const rewardPoint = 5;
+
+// 保存积分并更新页面显示
+function saveScore(){
+  localStorage.setItem("score", score);
+  document.getElementById("points").innerText = score;
+}
+
+// 每日领取积分
+function getDailyPoint(){
+  const lastDay = localStorage.getItem(todayKey);
+  const nowDay = new Date().toDateString();
+  if(lastDay === nowDay){
+    alert("今天已经领取过每日积分啦，明天再来！");
+    return;
+  }
+  score += rewardPoint;
+  localStorage.setItem(todayKey, nowDay);
+  saveScore();
+  alert(`打卡成功！获得${rewardPoint}积分`);
+}
+
+// 破案成功奖励，破案调用这个函数
+function caseSolveReward(add = 10){
+  score += add;
+  saveScore();
+  alert("案件侦破成功！奖励"+add+"积分");
+}
+
+// 查看线索，扣积分
+function viewClue(cost = 3){
+  if(score >= cost){
+    score -= cost;
+    saveScore();
+    return true;
+  }else{
+    alert("积分不足，无法查看线索！");
+    return false;
+  }
+}
+
+// 页面加载时，渲染积分
+saveScore();
 </script>
 </body>
 </html>
