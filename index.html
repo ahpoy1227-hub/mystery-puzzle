@@ -142,7 +142,8 @@ textarea,input{
   <div class="modal-content">
     <h3 id="modalTitle"></h3>
     <p id="modalText"></p>
-    <button class="btn" onclick="closeModal()">确定</button>
+    <button class="btn" onclick="if(viewClue(3)){ showClue(); }">查看线索(3积分)</button>
+<button class="btn" onclick="closeModal()">确定</button>
   </div>
 </div>
 
@@ -371,6 +372,7 @@ function caseSolveReward(add = 10){
 
 // 查看线索，扣积分
 function viewClue(cost = 3){
+
   if(score >= cost){
     score -= cost;
     saveScore();
@@ -379,6 +381,11 @@ function viewClue(cost = 3){
     alert("积分不足，无法查看线索！");
     return false;
   }
+}
+function showClue(){
+  // 获取当前案件的线索文字
+  const clueText = puzzles[currentPuzzle].clue;
+  alert("🔍 线索：" + clueText);
 }
 
 // 页面加载时，渲染积分
