@@ -1,0 +1,653 @@
+
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>推理谜案集</title>
+<link rel="manifest" href="manifest.json">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;font-family:system-ui}
+body{
+  background:#12121a;color:#eee;min-height:100vh;
+  transition: background 0.5s ease;
+}
+header{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:16px 20px;background:#1b1b28;
+  position:sticky;top:0;z-index:10;
+}
+.point-box{color:#ffd066;font-weight:bold;font-size:18px}
+.container{max-width:900px;margin:0 auto;padding:20px}
+.panel{display:none}
+.panel.active{display:block}
+.btn{
+  background:#3b4b8c;color:#fff;border:none;padding:12px 20px;
+  border-radius:10px;font-size:16px;margin:6px;cursor:pointer;
+}
+.btn:hover{background:#4b5cad}
+.btn-warning{background:#925020}
+.btn-danger{background:#7c2c2c}
+.btn:disabled{opacity:0.4;cursor:not-allowed;}
+.card{
+  background:#1e1e30;border-radius:12px;padding:18px;margin:12px 0;
+  border:1px solid #333;
+}
+.difficulty{margin:8px 0}
+.diff-easy{color:#7cf290}
+.diff-medium{color:#ffe270}
+.diff-hard{color:#ff7b7b}
+textarea,input{
+  width:100%;padding:12px;border-radius:8px;background:#27273a;
+  border:1px solid #444;color:#fff;margin:10px 0;font-size:16px;
+}
+.modal{
+  display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);
+  align-items:center;justify-content:center;padding:20px;
+}
+.modal.active{display:flex}
+.modal-content{
+  background:#1b1b28;padding:24px;border-radius:14px;max-width:500px;width:100%;
+}
+.solved-tag{
+  display:inline-block;
+  color:#7cf290;
+  margin-left:10px;
+}
+</style>
+</head>
+<body>
+<header>
+  <h2>推理谜案集</h2>
+  <div class="point-box">积分：<span id="points">0</span></div>
+</header>
+<div class="container">
+
+  <!-- 面板1：首页 -->
+  <div id="home" class="panel active">
+    <div class="card">
+      <h3>欢迎来到推理谜案集</h3>
+      <p>解开谜题赚取积分，兑换专属壁纸与特效。</p>
+    </div>
+    <button class="btn" onclick="showPanel('list')">开始解谜</button>
+    <button class="btn" onclick="showPanel('shop')">壁纸商店</button>
+  </div>
+
+  <!-- 面板2：谜题列表 -->
+  <div id="list" class="panel">
+    <button class="btn" onclick="showPanel('home')">← 返回首页</button>
+    <h3>案件列表</h3>
+    <div class="card" onclick="openPuzzle(0)">
+      <h4>窗边的破碎玻璃 <span class="solved-tag" id="tag0"></span></h4>
+      <div class="difficulty diff-easy">难度：简单</div>
+      <p>收藏家书房的玻璃破碎，判断是否伪造入室盗窃现场。</p>
+    </div>
+    <div class="card" onclick="openPuzzle(1)">
+      <h4>雨中的脚印 <span class="solved-tag" id="tag1"></span></h4>
+      <div class="difficulty diff-medium">难度：中等</div>
+      <p>大雨过后，现场脚印却没有被雨水冲掉。</p>
+    </div>
+    <div class="card" onclick="openPuzzle(2)">
+      <h4>停电的晚宴 <span class="solved-tag" id="tag2"></span></h4>
+      <div class="difficulty diff-hard">难度：困难</div>
+      <p>晚宴突然停电，一声枪响，凶手藏在宾客之中。</p>
+    </div>
+  </div>
+
+  <!-- 面板3：谜题详情页 -->
+  <div id="puzzle" class="panel">
+    <button class="btn" onclick="showPanel('list')">← 返回案件列表</button>
+    <button class="btn" onclick="showPanel('home')">返回首页</button>
+    <div class="card">
+      <h3 id="puzzleTitle">案件标题</h3>
+      <div class="difficulty" id="puzzleDiff"></div>
+      <p id="puzzleStory"></p>
+      <button class="btn btn-warning" onclick="showClue()">查看线索（消耗5积分）</button>
+      <div id="clueBox" style="display:none;margin:10px 0;color:#c9c9ff"></div>
+      <p>写下你的推理答案：</p>
+      <textarea id="answerInput" placeholder="在这里输入你的答案..."></textarea>
+      <button class="btn btn-danger" id="submitBtn" onclick="submitAnswer()">提交推理</button>
+    </div>
+  </div>
+
+  <!-- 面板4：壁纸商店 -->
+  <div id="shop" class="panel">
+    <button class="btn" onclick="showPanel('home')">← 返回首页</button>
+    <h3>壁纸商店</h3>
+    <div class="card">
+      <p>使用积分解锁全局壁纸，解锁后整个APP生效。</p>
+      <div>
+        <button class="btn" onclick="changeWallpaper('default')">城市（初始解锁）</button>
+        <button class="btn" onclick="buyWallpaper('memphis','#222033',50)">孟菲斯（50积分）</button>
+        <button class="btn" onclick="buyWallpaper('mountain','#182429',80)">群山（80积分）</button>
+        <button class="btn" onclick="buyWallpaper('bamboo','#15221c',120)">竹林（120积分）</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 弹窗：答题结果 -->
+<div id="resultModal" class="modal">
+  <div class="modal-content">
+    <h3 id="modalTitle"></h3>
+    <p id="modalText"></p>
+    <button class="btn" onclick="closeModal()">确定</button>
+  </div>
+</div>
+
+<script>
+// 谜题题库，修复中文冒号，增加独立关键词数组
+const puzzles = [
+  {
+    title:"窗边的破碎玻璃",
+    diff:"简单",
+    diffClass:"diff-easy",
+    story:"清晨，管家发现收藏家倒在书房窗边，窗户玻璃碎裂。侦探观察后判断：这不是小偷从外面破窗闯入，而是有人在屋内打碎玻璃伪造入室现场。请问侦探的依据是什么？",
+    clue:"玻璃碎片掉落位置是关键。",
+    answer:"大量玻璃碎片掉落在窗外。如果小偷从屋外打碎玻璃，碎片会落在房间里面；从室内向外砸，碎片才会掉窗外。",
+    keywords:["玻璃外面","碎片窗外","碎片在窗外"],
+    reward:15
+  },
+  {
+    title:"雨中的脚印",
+    diff:"中等",
+    diffClass:"diff-medium",
+    story:"一场暴雨从傍晚下到深夜。第二天早上发现尸体，泥泞地面留有清晰脚印，没有被雨水冲刷模糊。侦探立刻断定：凶案是雨停之后才发生。为什么？",
+    clue:"雨水会冲刷泥土脚印。",
+    answer:"如果案发时正在下雨，脚印会被大雨冲散变得模糊。清晰完整脚印说明下雨已经结束之后才踩上去。",
+    keywords:["雨停之后","雨停了之后","雨结束"],
+    reward:25
+  },
+  {
+    title:"停电的晚宴",
+    diff:"困难",
+    diffClass:"diff-hard",
+    story:"晚宴中途突然停电，漆黑中响起一声枪响。恢复供电后，主人中弹倒地。所有人都留在大厅，没有任何人离开房间。侦探锁定凶手，凶手提前准备了光源。",
+    clue:"凶手在黑暗里必须看清目标才能开枪。",
+    answer:"凶手自带发光物品（夜光标记/手电筒），在黑暗中定位受害者；其他人没有光源，无法瞄准射击。",
+    keywords:["夜光","手电筒","光源","发光"],
+    reward:40
+  }
+];
+
+// 面板切换
+function showPanel(id){
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+let currentPuzzleIndex = 0;
+function openPuzzle(idx){
+  currentPuzzleIndex = idx;
+  const p = puzzles[idx];
+  document.getElementById('puzzleTitle').innerText = p.title;
+  document.getElementById('puzzleDiff').innerText = "难度："+p.diff;
+  document.getElementById('puzzleDiff').className = "difficulty "+p.diffClass;
+  document.getElementById('puzzleStory').innerText = p.story;
+  document.getElementById('clueBox').style.display="none";
+  document.getElementById('answerInput').value="";
+  // 如果已经解开，禁用提交按钮
+  if(solvedPuzzles.includes(idx)){
+    document.getElementById("submitBtn").disabled = true;
+  }else{
+    document.getElementById("submitBtn").disabled = false;
+  }
+  showPanel('puzzle');
+}
+
+// 本地存储数据
+let points = Number(localStorage.getItem("mysteryPoints")) || 0;
+let solvedPuzzles = JSON.parse(localStorage.getItem("solvedPuzzles")) || [];
+let unlockedWallpaper = JSON.parse(localStorage.getItem("wallpaperList")) || ["default"];
+let activeWall = localStorage.getItem("activeWall") || "default";
+
+// 初始化页面数据
+function initData(){
+  document.getElementById("points").innerText = points;
+  renderSolvedTags();
+  applyWallpaper(activeWall);
+}
+function savePoints(){
+  localStorage.setItem("mysteryPoints",points);
+}
+function saveSolved(){
+  localStorage.setItem("solvedPuzzles", JSON.stringify(solvedPuzzles));
+}
+function saveWallList(){
+  localStorage.setItem("wallpaperList", JSON.stringify(unlockedWallpaper));
+}
+function saveActiveWall(name){
+  localStorage.setItem("activeWall", name);
+}
+// 渲染已解谜标记
+function renderSolvedTags(){
+  for(let i=0;i<puzzles.length;i++){
+    const tag = document.getElementById(`tag${i}`);
+    if(solvedPuzzles.includes(i)){
+      tag.innerText = "✅已解开";
+    }else{
+      tag.innerText = "";
+    }
+  }
+}
+
+// 查看线索
+function showClue(){
+  if(points >=5){
+    points -=5;
+    savePoints();
+    document.getElementById("points").innerText = points;
+    document.getElementById("clueBox").innerText = puzzles[currentPuzzleIndex].clue;
+    document.getElementById("clueBox").style.display="block";
+  }else{
+    openModal("积分不足","你积分不够，无法查看这条线索。");
+  }
+}
+
+// 提交答案【修复：独立关键词匹配，防止跨题误判】
+function submitAnswer(){
+  const userAns = document.getElementById('answerInput').value.trim().toLowerCase();
+  const p = puzzles[currentPuzzleIndex];
+  let isCorrect = false;
+  // 遍历本题关键词
+  p.keywords.forEach(kw=>{
+    if(userAns.includes(kw.toLowerCase())) isCorrect = true;
+  })
+
+  if(isCorrect){
+    // 防止重复拿奖励
+    if(!solvedPuzzles.includes(currentPuzzleIndex)){
+      points += p.reward;
+      solvedPuzzles.push(currentPuzzleIndex);
+      savePoints();
+      saveSolved();
+      renderSolvedTags();
+    }
+    document.getElementById("points").innerText = points;
+    openModal("推理正确！","恭喜，获得"+p.reward+"积分！\n真相："+p.answer);
+    document.getElementById("submitBtn").disabled = true;
+  }else{
+    openModal("推理错误","暂时不对，可以再想想，或者消耗积分查看线索。");
+  }
+}
+
+function openModal(title,text){
+  document.getElementById('modalTitle').innerText = title;
+  document.getElementById('modalText').innerText = text;
+  document.getElementById('resultModal').classList.add('active');
+}
+function closeModal(){
+  document.getElementById('resultModal').classList.remove('active');
+}
+
+// 壁纸系统
+function applyWallpaper(name){
+  activeWall = name;
+  saveActiveWall(name);
+  if(name === "default"){
+    document.body.style.background = "#12121a";
+  }else if(name === "memphis"){
+    document.body.style.background = "#222033";
+  }else if(name === "mountain"){
+    document.body.style.background = "#182429";
+  }else if(name === "bamboo"){
+    document.body.style.background = "#15221c";
+  }
+}
+function changeWallpaper(name){
+  if(unlockedWallpaper.includes(name)){
+    applyWallpaper(name);
+    openModal("切换成功","壁纸已经生效！");
+  }else{
+    openModal("未解锁","你还没有解锁这个壁纸，需要先购买。");
+  }
+}
+function buyWallpaper(name,bgColor,cost){
+  if(unlockedWallpaper.includes(name)){
+    applyWallpaper(name);
+    openModal("切换成功","壁纸已经生效！");
+    return;
+  }
+  if(points >= cost){
+    points -= cost;
+    unlockedWallpaper.push(name);
+    savePoints();
+    saveWallList();
+    applyWallpaper(name);
+    document.getElementById("points").innerText = points;
+    openModal("解锁成功！","成功解锁壁纸，已自动启用。");
+  }else{
+    openModal("积分不足","积分不够，无法解锁这个壁纸！");
+  }
+}
+
+// 页面启动
+initData();
+</script>
+</body>
+</html>
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>推理谜案集</title>
+<link rel="manifest" href="manifest.json">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;font-family:system-ui}
+body{
+  background:#12121a;color:#eee;min-height:100vh;
+  transition: background 0.5s ease;
+}
+header{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:16px 20px;background:#1b1b28;
+  position:sticky;top:0;z-index:10;
+}
+.point-box{color:#ffd066;font-weight:bold;font-size:18px}
+.container{max-width:900px;margin:0 auto;padding:20px}
+.panel{display:none}
+.panel.active{display:block}
+.btn{
+  background:#3b4b8c;color:#fff;border:none;padding:12px 20px;
+  border-radius:10px;font-size:16px;margin:6px;cursor:pointer;
+}
+.btn:hover{background:#4b5cad}
+.btn-warning{background:#925020}
+.btn-danger{background:#7c2c2c}
+.btn:disabled{opacity:0.4;cursor:not-allowed;}
+.card{
+  background:#1e1e30;border-radius:12px;padding:18px;margin:12px 0;
+  border:1px solid #333;
+}
+.difficulty{margin:8px 0}
+.diff-easy{color:#7cf290}
+.diff-medium{color:#ffe270}
+.diff-hard{color:#ff7b7b}
+textarea,input{
+  width:100%;padding:12px;border-radius:8px;background:#27273a;
+  border:1px solid #444;color:#fff;margin:10px 0;font-size:16px;
+}
+.modal{
+  display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);
+  align-items:center;justify-content:center;padding:20px;
+}
+.modal.active{display:flex}
+.modal-content{
+  background:#1b1b28;padding:24px;border-radius:14px;max-width:500px;width:100%;
+}
+.solved-tag{
+  display:inline-block;
+  color:#7cf290;
+  margin-left:10px;
+}
+</style>
+</head>
+<body>
+<header>
+  <h2>推理谜案集</h2>
+  <div class="point-box">积分：<span id="points">0</span></div>
+</header>
+<div class="container">
+
+  <!-- 面板1：首页 -->
+  <div id="home" class="panel active">
+    <div class="card">
+      <h3>欢迎来到推理谜案集</h3>
+      <p>解开谜题赚取积分，兑换专属壁纸与特效。</p>
+    </div>
+    <button class="btn" onclick="showPanel('list')">开始解谜</button>
+    <button class="btn" onclick="showPanel('shop')">壁纸商店</button>
+  </div>
+
+  <!-- 面板2：谜题列表 -->
+  <div id="list" class="panel">
+    <button class="btn" onclick="showPanel('home')">← 返回首页</button>
+    <h3>案件列表</h3>
+    <div class="card" onclick="openPuzzle(0)">
+      <h4>窗边的破碎玻璃 <span class="solved-tag" id="tag0"></span></h4>
+      <div class="difficulty diff-easy">难度：简单</div>
+      <p>收藏家书房的玻璃破碎，判断是否伪造入室盗窃现场。</p>
+    </div>
+    <div class="card" onclick="openPuzzle(1)">
+      <h4>雨中的脚印 <span class="solved-tag" id="tag1"></span></h4>
+      <div class="difficulty diff-medium">难度：中等</div>
+      <p>大雨过后，现场脚印却没有被雨水冲掉。</p>
+    </div>
+    <div class="card" onclick="openPuzzle(2)">
+      <h4>停电的晚宴 <span class="solved-tag" id="tag2"></span></h4>
+      <div class="difficulty diff-hard">难度：困难</div>
+      <p>晚宴突然停电，一声枪响，凶手藏在宾客之中。</p>
+    </div>
+  </div>
+
+  <!-- 面板3：谜题详情页 -->
+  <div id="puzzle" class="panel">
+    <button class="btn" onclick="showPanel('list')">← 返回案件列表</button>
+    <button class="btn" onclick="showPanel('home')">返回首页</button>
+    <div class="card">
+      <h3 id="puzzleTitle">案件标题</h3>
+      <div class="difficulty" id="puzzleDiff"></div>
+      <p id="puzzleStory"></p>
+      <button class="btn btn-warning" onclick="showClue()">查看线索（消耗5积分）</button>
+      <div id="clueBox" style="display:none;margin:10px 0;color:#c9c9ff"></div>
+      <p>写下你的推理答案：</p>
+      <textarea id="answerInput" placeholder="在这里输入你的答案..."></textarea>
+      <button class="btn btn-danger" id="submitBtn" onclick="submitAnswer()">提交推理</button>
+    </div>
+  </div>
+
+  <!-- 面板4：壁纸商店 -->
+  <div id="shop" class="panel">
+    <button class="btn" onclick="showPanel('home')">← 返回首页</button>
+    <h3>壁纸商店</h3>
+    <div class="card">
+      <p>使用积分解锁全局壁纸，解锁后整个APP生效。</p>
+      <div>
+        <button class="btn" onclick="changeWallpaper('default')">城市（初始解锁）</button>
+        <button class="btn" onclick="buyWallpaper('memphis','#222033',50)">孟菲斯（50积分）</button>
+        <button class="btn" onclick="buyWallpaper('mountain','#182429',80)">群山（80积分）</button>
+        <button class="btn" onclick="buyWallpaper('bamboo','#15221c',120)">竹林（120积分）</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 弹窗：答题结果 -->
+<div id="resultModal" class="modal">
+  <div class="modal-content">
+    <h3 id="modalTitle"></h3>
+    <p id="modalText"></p>
+    <button class="btn" onclick="closeModal()">确定</button>
+  </div>
+</div>
+
+<script>
+// 谜题题库，修复中文冒号，增加独立关键词数组
+const puzzles = [
+  {
+    title:"窗边的破碎玻璃",
+    diff:"简单",
+    diffClass:"diff-easy",
+    story:"清晨，管家发现收藏家倒在书房窗边，窗户玻璃碎裂。侦探观察后判断：这不是小偷从外面破窗闯入，而是有人在屋内打碎玻璃伪造入室现场。请问侦探的依据是什么？",
+    clue:"玻璃碎片掉落位置是关键。",
+    answer:"大量玻璃碎片掉落在窗外。如果小偷从屋外打碎玻璃，碎片会落在房间里面；从室内向外砸，碎片才会掉窗外。",
+    keywords:["玻璃外面","碎片窗外","碎片在窗外"],
+    reward:15
+  },
+  {
+    title:"雨中的脚印",
+    diff:"中等",
+    diffClass:"diff-medium",
+    story:"一场暴雨从傍晚下到深夜。第二天早上发现尸体，泥泞地面留有清晰脚印，没有被雨水冲刷模糊。侦探立刻断定：凶案是雨停之后才发生。为什么？",
+    clue:"雨水会冲刷泥土脚印。",
+    answer:"如果案发时正在下雨，脚印会被大雨冲散变得模糊。清晰完整脚印说明下雨已经结束之后才踩上去。",
+    keywords:["雨停之后","雨停了之后","雨结束"],
+    reward:25
+  },
+  {
+    title:"停电的晚宴",
+    diff:"困难",
+    diffClass:"diff-hard",
+    story:"晚宴中途突然停电，漆黑中响起一声枪响。恢复供电后，主人中弹倒地。所有人都留在大厅，没有任何人离开房间。侦探锁定凶手，凶手提前准备了光源。",
+    clue:"凶手在黑暗里必须看清目标才能开枪。",
+    answer:"凶手自带发光物品（夜光标记/手电筒），在黑暗中定位受害者；其他人没有光源，无法瞄准射击。",
+    keywords:["夜光","手电筒","光源","发光"],
+    reward:40
+  }
+];
+
+// 面板切换
+function showPanel(id){
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+let currentPuzzleIndex = 0;
+function openPuzzle(idx){
+  currentPuzzleIndex = idx;
+  const p = puzzles[idx];
+  document.getElementById('puzzleTitle').innerText = p.title;
+  document.getElementById('puzzleDiff').innerText = "难度："+p.diff;
+  document.getElementById('puzzleDiff').className = "difficulty "+p.diffClass;
+  document.getElementById('puzzleStory').innerText = p.story;
+  document.getElementById('clueBox').style.display="none";
+  document.getElementById('answerInput').value="";
+  // 如果已经解开，禁用提交按钮
+  if(solvedPuzzles.includes(idx)){
+    document.getElementById("submitBtn").disabled = true;
+  }else{
+    document.getElementById("submitBtn").disabled = false;
+  }
+  showPanel('puzzle');
+}
+
+// 本地存储数据
+let points = Number(localStorage.getItem("mysteryPoints")) || 0;
+let solvedPuzzles = JSON.parse(localStorage.getItem("solvedPuzzles")) || [];
+let unlockedWallpaper = JSON.parse(localStorage.getItem("wallpaperList")) || ["default"];
+let activeWall = localStorage.getItem("activeWall") || "default";
+
+// 初始化页面数据
+function initData(){
+  document.getElementById("points").innerText = points;
+  renderSolvedTags();
+  applyWallpaper(activeWall);
+}
+function savePoints(){
+  localStorage.setItem("mysteryPoints",points);
+}
+function saveSolved(){
+  localStorage.setItem("solvedPuzzles", JSON.stringify(solvedPuzzles));
+}
+function saveWallList(){
+  localStorage.setItem("wallpaperList", JSON.stringify(unlockedWallpaper));
+}
+function saveActiveWall(name){
+  localStorage.setItem("activeWall", name);
+}
+// 渲染已解谜标记
+function renderSolvedTags(){
+  for(let i=0;i<puzzles.length;i++){
+    const tag = document.getElementById(`tag${i}`);
+    if(solvedPuzzles.includes(i)){
+      tag.innerText = "✅已解开";
+    }else{
+      tag.innerText = "";
+    }
+  }
+}
+
+// 查看线索
+function showClue(){
+  if(points >=5){
+    points -=5;
+    savePoints();
+    document.getElementById("points").innerText = points;
+    document.getElementById("clueBox").innerText = puzzles[currentPuzzleIndex].clue;
+    document.getElementById("clueBox").style.display="block";
+  }else{
+    openModal("积分不足","你积分不够，无法查看这条线索。");
+  }
+}
+
+// 提交答案【修复：独立关键词匹配，防止跨题误判】
+function submitAnswer(){
+  const userAns = document.getElementById('answerInput').value.trim().toLowerCase();
+  const p = puzzles[currentPuzzleIndex];
+  let isCorrect = false;
+  // 遍历本题关键词
+  p.keywords.forEach(kw=>{
+    if(userAns.includes(kw.toLowerCase())) isCorrect = true;
+  })
+
+  if(isCorrect){
+    // 防止重复拿奖励
+    if(!solvedPuzzles.includes(currentPuzzleIndex)){
+      points += p.reward;
+      solvedPuzzles.push(currentPuzzleIndex);
+      savePoints();
+      saveSolved();
+      renderSolvedTags();
+    }
+    document.getElementById("points").innerText = points;
+    openModal("推理正确！","恭喜，获得"+p.reward+"积分！\n真相："+p.answer);
+    document.getElementById("submitBtn").disabled = true;
+  }else{
+    openModal("推理错误","暂时不对，可以再想想，或者消耗积分查看线索。");
+  }
+}
+
+function openModal(title,text){
+  document.getElementById('modalTitle').innerText = title;
+  document.getElementById('modalText').innerText = text;
+  document.getElementById('resultModal').classList.add('active');
+}
+function closeModal(){
+  document.getElementById('resultModal').classList.remove('active');
+}
+
+// 壁纸系统
+function applyWallpaper(name){
+  activeWall = name;
+  saveActiveWall(name);
+  if(name === "default"){
+    document.body.style.background = "#12121a";
+  }else if(name === "memphis"){
+    document.body.style.background = "#222033";
+  }else if(name === "mountain"){
+    document.body.style.background = "#182429";
+  }else if(name === "bamboo"){
+    document.body.style.background = "#15221c";
+  }
+}
+function changeWallpaper(name){
+  if(unlockedWallpaper.includes(name)){
+    applyWallpaper(name);
+    openModal("切换成功","壁纸已经生效！");
+  }else{
+    openModal("未解锁","你还没有解锁这个壁纸，需要先购买。");
+  }
+}
+function buyWallpaper(name,bgColor,cost){
+  if(unlockedWallpaper.includes(name)){
+    applyWallpaper(name);
+    openModal("切换成功","壁纸已经生效！");
+    return;
+  }
+  if(points >= cost){
+    points -= cost;
+    unlockedWallpaper.push(name);
+    savePoints();
+    saveWallList();
+    applyWallpaper(name);
+    document.getElementById("points").innerText = points;
+    openModal("解锁成功！","成功解锁壁纸，已自动启用。");
+  }else{
+    openModal("积分不足","积分不够，无法解锁这个壁纸！");
+  }
+}
+
+// 页面启动
+initData();
+</script>
+</body>
+</html>
